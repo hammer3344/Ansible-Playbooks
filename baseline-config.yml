@@ -99,20 +99,27 @@
       set_fact:
         cdp_lines: "{{ cdp_output.stdout[0].splitlines() }}"
 
-    - name: Debug each CDP line
-      debug:
-        msg: "{{ item }}"
-      loop: "{{ cdp_lines }}"
+    - name: Filter valid CDP lines (skip headers/footers)
+      set_fact:
+        neighbor_lines: "{{ cdp_lines | select('match','^\\S+\\.cisco\\.com') | list }}"
 
-    - name: Parse CDP neighbors line by line
+    - name: Debug filtered CDP lines
+      debug:
+        var: neighbor_lines
+
+    - name: Parse CDP neighbors by splitting fields
       set_fact:
         neighbors: >-
           {{
-            cdp_lines
-            | map('regex_search', '^\\s*(\\S+)\\s+(Gig\\s*\\d+)\\s+\\d+\\s+\\S+\\s+\\S+\\s+(Gig\\s*\\d+)$')
-            | select('!=', None)
+            neighbor_lines
+            | map('split')
+            | map('extract', [0,1,-1])
             | list
           }}
+
+    - name: Normalize interfaces
+      set_fact:
+        neighbors: "{{ neighbors | map('map','string') | map('list') | list }}"
 
     - name: Debug parsed neighbors
       debug:
@@ -121,7 +128,7 @@
     - name: Apply interface descriptions based on CDP
       ios_config:
         lines:
-          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 | regex_replace('\\s+', '') }} //
-        parents: interface {{ item.1 | regex_replace('\\s+', '') }}
+          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 | regex_replace('\\s+','') }} //
+        parents: interface {{ item.1 | regex_replace('\\s+','') }}
       loop: "{{ neighbors }}"
       when: neighbors | length > 0
