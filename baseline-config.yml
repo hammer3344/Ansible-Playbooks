@@ -1,0 +1,45 @@
+- name: Configure routers
+  hosts: routers
+  gather_facts: no
+  tasks:
+    - name: Apply R1-specific config
+      ios_config:
+        lines:
+          - int g1
+          - ip address 10.0.12.1 255.255.255.252
+          - no shutdown
+          - int g2
+          - ip address 10.0.13.1 255.255.255.252
+          - no shutdown
+          - router ospf 1
+          - network 10.0.12.0 0.0.0.3 area 0
+          - network 10.0.13.0 0.0.0.3 area 0
+      when: inventory_hostname == "R1"
+
+    - name: Apply R2-specific config
+      ios_config:
+        lines:
+          - int g1
+          - ip address 10.0.12.2 255.255.255.252
+          - no shutdown
+          - int g3
+          - ip address 10.0.23.2 255.255.255.252
+          - no shutdown
+          - router ospf 1
+          - network 10.0.12.0 0.0.0.3 area 0
+          - network 10.0.23.0 0.0.0.3 area 0
+      when: inventory_hostname == "R2"
+      
+    - name: Apply R3-specific config
+      ios_config:
+        lines:
+          - int g3
+          - ip address 10.0.23.2 255.255.255.252
+          - no shutdown
+          - int g2
+          - ip address 10.0.13.2 255.255.255.252
+          - no shutdown
+          - router ospf 1
+          - network 10.0.12.0 0.0.0.3 area 0
+          - network 10.0.23.0 0.0.0.3 area 0
+      when: inventory_hostname == "R3"
