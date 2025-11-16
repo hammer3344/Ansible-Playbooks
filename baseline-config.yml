@@ -38,7 +38,7 @@
     - name: Configure R2 second interface
       ios_config:
         lines:
-          - ip address 10.0.23.2 255.255.255.252
+          - ip address 10.0.23.1 255.255.255.252
           - no shutdown
         parents: interface g3
       when: inventory_hostname == "R2"
