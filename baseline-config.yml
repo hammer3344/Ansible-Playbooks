@@ -3,6 +3,7 @@
   gather_facts: no
 
   tasks:
+    # --- Your existing interface + OSPF config tasks ---
     - name: Configure R1 interfaces
       ios_config:
         lines:
@@ -80,3 +81,21 @@
           - network 10.0.23.0 0.0.0.3 area 0
         parents: router ospf 1
       when: inventory_hostname == "R3"
+
+    # --- New logic: CDP neighbor parsing and description ---
+    - name: Gather CDP neighbors
+      ios_command:
+        commands:
+          - show cdp neighbors detail
+      register: cdp_output
+
+    - name: Parse CDP neighbors
+      set_fact:
+        neighbors: "{{ cdp_output.stdout[0] | regex_findall('Device ID: (\\S+).*?Interface: (\\S+),.*?Port ID \\(outgoing port\\): (\\S+)', multiline=True) }}"
+
+    - name: Apply interface descriptions based on CDP
+      ios_config:
+        lines:
+          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 }} //
+        parents: interface {{ item.1 }}
+      loop: "{{ neighbors }}"
