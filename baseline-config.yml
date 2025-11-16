@@ -95,14 +95,22 @@
           - show cdp neighbors
       register: cdp_output
 
-    - name: Parse CDP neighbors
+    - name: Debug raw CDP output
+      debug:
+        var: cdp_output.stdout[0]
+
+    - name: Parse CDP neighbors (table format)
       set_fact:
-        neighbors: "{{ cdp_output.stdout[0] | regex_findall('^(\\S+)\\s+(Gig\\s+\\d+)\\s+\\d+\\s+\\S+\\s+\\S+\\s+(Gig\\s+\\d+)', multiline=True) }}"
+        neighbors: "{{ cdp_output.stdout[0] | regex_findall('^(\\S+)\\s+(Gig\\s*\\d+)\\s+\\d+\\s+\\S+\\s+\\S+\\s+(Gig\\s*\\d+)', multiline=True) }}"
+
+    - name: Debug parsed neighbors
+      debug:
+        var: neighbors
 
     - name: Apply interface descriptions based on CDP
       ios_config:
         lines:
-          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 }} //
+          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 | regex_replace(' ','') }} //
         parents: interface {{ item.1 | regex_replace(' ','') }}
       loop: "{{ neighbors }}"
       when: neighbors | length > 0
