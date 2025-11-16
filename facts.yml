@@ -1,0 +1,13 @@
+---
+- name: Gather facts from Cisco routers
+  hosts: routers
+  connection: network_cli
+  gather_facts: no
+  tasks:
+    - name: Collect IOS facts
+      ios_facts:
+      register: cisco_facts
+
+    - name: Show Cisco facts
+      debug:
+        var: cisco_facts
