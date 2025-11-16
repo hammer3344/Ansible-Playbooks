@@ -3,6 +3,12 @@
   gather_facts: no
 
   tasks:
+    # --- Enable CDP globally on all routers ---
+    - name: Enable CDP globally
+      ios_config:
+        lines:
+          - cdp run
+
     # --- Router configs ---
     - name: Configure R1 interfaces
       ios_config:
@@ -83,21 +89,20 @@
       when: inventory_hostname == "R3"
 
     # --- CDP neighbor parsing and descriptions ---
-- name: Gather CDP neighbors
-  ios_command:
-    commands:
-      - show cdp neighbors
-  register: cdp_output
+    - name: Gather CDP neighbors
+      ios_command:
+        commands:
+          - show cdp neighbors
+      register: cdp_output
 
-- name: Parse CDP neighbors
-  set_fact:
-    neighbors: "{{ cdp_output.stdout[0] | regex_findall('^(\\S+)\\s+(Gig\\s+\\d+)\\s+\\d+\\s+\\S+\\s+\\S+\\s+(Gig\\s+\\d+)', multiline=True) }}"
+    - name: Parse CDP neighbors
+      set_fact:
+        neighbors: "{{ cdp_output.stdout[0] | regex_findall('^(\\S+)\\s+(Gig\\s+\\d+)\\s+\\d+\\s+\\S+\\s+\\S+\\s+(Gig\\s+\\d+)', multiline=True) }}"
 
-- name: Apply interface descriptions based on CDP
-  ios_config:
-    lines:
-      - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 }} //
-    parents: interface {{ item.1 | regex_replace(' ','') }}
-  loop: "{{ neighbors }}"
-  when: neighbors | length > 0
-
+    - name: Apply interface descriptions based on CDP
+      ios_config:
+        lines:
+          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 }} //
+        parents: interface {{ item.1 | regex_replace(' ','') }}
+      loop: "{{ neighbors }}"
+      when: neighbors | length > 0
