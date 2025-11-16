@@ -1,6 +1,7 @@
 - name: Get running config from routers
   hosts: routers
   gather_facts: no
+
   tasks:
     - name: Run "show running-config"
       ios_command:
@@ -8,8 +9,7 @@
           - show running-config
       register: run_cfg
 
-- name: Save running config to file
-  copy:
-    content: "{{ run_cfg.stdout[0] }}"
-    dest: "/tmp/semaphore/configs/{{ inventory_hostname }}-running.txt"
-
+    - name: Save running config to file
+      copy:
+        content: "{{ run_cfg.stdout[0] }}"
+        dest: "/tmp/semaphore/configs/{{ inventory_hostname }}-running.txt"
