@@ -107,19 +107,10 @@
       debug:
         var: neighbor_lines
 
-    - name: Parse CDP neighbors by splitting fields
+    - name: Parse CDP neighbors by splitting and recombining
       set_fact:
-        neighbors: >-
-          {{
-            neighbor_lines
-            | map('split')
-            | map('extract', [0,1,-1])
-            | list
-          }}
-
-    - name: Normalize interfaces
-      set_fact:
-        neighbors: "{{ neighbors | map('map','string') | map('list') | list }}"
+        neighbors: "{{ neighbors | default([]) + [[ item.split()[0], (item.split()[1] ~ item.split()[2]), (item.split()[-2] ~ item.split()[-1]) ]] }}"
+      loop: "{{ neighbor_lines }}"
 
     - name: Debug parsed neighbors
       debug:
@@ -128,7 +119,7 @@
     - name: Apply interface descriptions based on CDP
       ios_config:
         lines:
-          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 | regex_replace('\\s+','') }} //
-        parents: interface {{ item.1 | regex_replace('\\s+','') }}
+          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 }} //
+        parents: interface {{ item.1 }}
       loop: "{{ neighbors }}"
       when: neighbors | length > 0
