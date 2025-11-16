@@ -8,7 +8,8 @@
           - show running-config
       register: run_cfg
 
-    - name: Save running config to file
-      copy:
-        content: "{{ run_cfg.stdout[0] }}"
-        dest: "/home/steve/docker-config/playbooks/configs/{{ inventory_hostname }}-running.txt"
+- name: Save running config to file
+  copy:
+    content: "{{ run_cfg.stdout[0] }}"
+    dest: "/tmp/semaphore/configs/{{ inventory_hostname }}-running.txt"
+
