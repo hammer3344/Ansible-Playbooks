@@ -89,45 +89,39 @@
       when: inventory_hostname == "R3"
 
     # --- CDP neighbor parsing and descriptions ---
-    - name: Gather CDP neighbors (start at table, skip header/footer)
+    - name: Gather CDP neighbors (table only)
       ios_command:
         commands:
           - show cdp neighbors | begin Device ID
       register: cdp_output
 
-    - name: Debug raw CDP output (trimmed)
-      debug:
-        var: cdp_output.stdout[0]
+    - name: Split CDP output into lines
+      set_fact:
+        cdp_lines: "{{ cdp_output.stdout[0].splitlines() }}"
 
-    # Regex tuned for the compact table format:
-    # DeviceID    Local Intrfce   Holdtme  Capability  Platform  Port ID
-    # R2.cisco... Gig 1           148      R I         CSR1000V  Gig 1
-    - name: Parse CDP neighbors from table
+    - name: Debug each CDP line
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ cdp_lines }}"
+
+    - name: Parse CDP neighbors line by line
       set_fact:
         neighbors: >-
           {{
-            cdp_output.stdout[0]
-            | regex_findall('^\\s*(\\S+)\\s+(Gig\\s*\\d+)\\s+\\d+\\s+\\S+(?:\\s+\\S+)*\\s+\\S+\\s+(Gig\\s*\\d+)$', multiline=True)
+            cdp_lines
+            | map('regex_search', '^\\s*(\\S+)\\s+(Gig\\s*\\d+)\\s+\\d+\\s+\\S+\\s+\\S+\\s+(Gig\\s*\\d+)$')
+            | select('!=', None)
+            | list
           }}
 
     - name: Debug parsed neighbors
       debug:
         var: neighbors
 
-    # Normalize interface labels:
-    # - "Gig 1" -> "Gig1"
-    # - Optionally to "GigabitEthernet1" if your devices expect full names
-    - name: Build interface-description payloads
-      set_fact:
-        neighbor_payloads: >-
-          {{
-            neighbors | map('list') | map('extract', [0,1,2]) | list
-          }}
-
     - name: Apply interface descriptions based on CDP
       ios_config:
         lines:
-          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ (item.2 | regex_replace('\\s+', '')) }} //
+          - description // {{ item.0 | regex_replace('\\.cisco\\.com','') }} - {{ item.2 | regex_replace('\\s+', '') }} //
         parents: interface {{ item.1 | regex_replace('\\s+', '') }}
-      loop: "{{ neighbor_payloads }}"
-      when: neighbor_payloads | length > 0
+      loop: "{{ neighbors }}"
+      when: neighbors | length > 0
