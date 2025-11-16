@@ -8,6 +8,7 @@
         lines:
           - ip address 10.0.12.1 255.255.255.252
           - no shutdown
+          - cdp enable
         parents: interface g1
       when: inventory_hostname == "R1"
 
@@ -16,6 +17,7 @@
         lines:
           - ip address 10.0.13.1 255.255.255.252
           - no shutdown
+          - cdp enable
         parents: interface g2
       when: inventory_hostname == "R1"
 
@@ -32,6 +34,7 @@
         lines:
           - ip address 10.0.12.2 255.255.255.252
           - no shutdown
+          - cdp enable
         parents: interface g1
       when: inventory_hostname == "R2"
 
@@ -40,6 +43,7 @@
         lines:
           - ip address 10.0.23.1 255.255.255.252
           - no shutdown
+          - cdp enable
         parents: interface g3
       when: inventory_hostname == "R2"
 
@@ -56,6 +60,7 @@
         lines:
           - ip address 10.0.23.2 255.255.255.252
           - no shutdown
+          - cdp enable
         parents: interface g3
       when: inventory_hostname == "R3"
 
@@ -64,6 +69,7 @@
         lines:
           - ip address 10.0.13.2 255.255.255.252
           - no shutdown
+          - cdp enable
         parents: interface g2
       when: inventory_hostname == "R3"
 
